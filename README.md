@@ -1,5 +1,5 @@
 # 🌊 POSEIDON  
-**POse Supervision with Explicit/Implicit Differentiable Optimization Network**
+**POSe estimation with Explicit/Implicit Differentiable OptimizatioN**
 
 > **POSEIDON** brings differentiable pose estimation to deep keypoint models by integrating Perspective-n-Point (PnP) solving with implicit gradients — diving deep into spatial reasoning for robust 3D localization.
 
