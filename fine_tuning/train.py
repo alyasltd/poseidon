@@ -144,7 +144,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 CHECKPOINT_DIR = "checkpoints"
 trainer = Trainer(experiment_name="lard_ft_1", ckpt_root_dir=CHECKPOINT_DIR)
 
-yolo_nas_pose = models.get(Models.YOLO_NAS_POSE_S, num_classes=4,arch_params={"num_keypoints": NUM_JOINTS}, pretrained_weights="coco_pose").to(device)
+yolo_nas_pose = models.get(Models.YOLO_NAS_POSE_S, num_classes=1,arch_params={"num_keypoints": NUM_JOINTS}, pretrained_weights="coco_pose").to(device)
 
 
 # Define the post-prediction callback for pose estimation
@@ -192,7 +192,7 @@ train_params = {
     "initial_lr": 5e-4,
     "lr_mode": "cosine",
     "cosine_final_lr_ratio": 0.05,
-    "max_epochs": 10,
+    "max_epochs": 100,
     "zero_weight_decay_on_bias_and_bn": True,
     "batch_accumulate": 1,
     "average_best_models": True,
@@ -225,5 +225,5 @@ train_params = {
 }
 
 
-# Note, this is training for 10 epochs to demonstrate how to do it
+# Note, this is training for 100 epochs 
 trainer.train(model=yolo_nas_pose, training_params=train_params, train_loader=train_dataloader, valid_loader=val_dataloader)
