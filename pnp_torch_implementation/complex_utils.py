@@ -1,6 +1,11 @@
 import math
 import torch
 
+def addition(a,b):
+    # a = torch.tensor([a_real, a_imag])
+    # b = torch.tensor([b_real, b_imag])
+    return torch.tensor([a[0] + b[0], a[1] + b[1]])
+
 def product_of_2_complex_numbers(a, b):
    # a = torch.tensor([a_real, a_imag])
    # b = torch.tensor([b_real, b_imag])
@@ -9,6 +14,14 @@ def product_of_2_complex_numbers(a, b):
    imag_part = a[0] * b[1] + a[1] * b[0]
    return torch.tensor([real_part, imag_part])
 
+def sqrt(a):
+    # a.shape =(0,)
+    # a real 
+    if a < 0:
+        return torch.tensor([0.0, torch.sqrt(torch.tensor(-a))]) 
+    else : 
+        return torch.tensor([torch.sqrt(torch.tensor(a)), 0.0])
+    
 def product_complex_real(a, b):
     # a = torch.tensor([a_real, a_imag])
     # b is a real number (NOT A TENSOR))
@@ -24,6 +37,7 @@ def inverse_complex_number(a):
     return torch.tensor([a[0] / denom, -a[1] / denom])
 
 def complex_number_power_k(a, k):
+
     # a = torch.tensor([a_real, a_imag])
     # k is an integer
 
@@ -40,6 +54,7 @@ def complex_number_power_k(a, k):
            result = product_of_2_complex_numbers(result, a)
     return result
     
+
 def argument(a) : #potentiellemen pb si (0,0)
    # a = torch.tensor([a_real, a_imag])
 
@@ -67,18 +82,6 @@ def sqrt_3(a) : # for a real number a_imag = 0
     else : 
         return torch.tensor([-(-a[0])**(1/3), 0]) 
     
-def addition(a,b):
-    # a = torch.tensor([a_real, a_imag])
-    # b = torch.tensor([b_real, b_imag])
-    return torch.tensor([a[0] + b[0], a[1] + b[1]])
-
-def sqrt(a):
-    # a real 
-    if a < 0:
-        return torch.tensor([0.0, torch.sqrt(torch.tensor(-a))]) 
-    else : 
-        return torch.tensor([torch.sqrt(torch.tensor(a)), 0.0])
-
 
 def sqrt_complex(a):
     # a = torch.tensor([a_real, a_imag])
@@ -105,29 +108,3 @@ def addition_complex_real(a, b):
     # b is a real number (NOT A TENSOR)
     return torch.tensor([a[0] + b, a[1]])
 
-def polynomial_root_calculation_3rd_degree(a, b, c, d):
-    '''# Convert to complex tensors
-    a = torch.tensor(a, dtype=torch.complex64)
-    b = torch.tensor(b, dtype=torch.complex64)
-    c = torch.tensor(c, dtype=torch.complex64)
-    d = torch.tensor(d, dtype=torch.complex64)'''
-
-    # Discriminant terms
-    p = (3 * a * c - b**2) / (3 * a**2)
-    q = (2 * b**3 - 9 * a * b * c + 27 * a**2 * d) / (27 * a**3)
-    delta = -4 * p**3 - 27 * q**2
-    roots = []
-
-    j_ = torch.tensor([-0.5, torch.sqrt(torch.tensor(3))/2])  # cube root of unity
-
-    for k in range(3):
-        delta_sur_27 = -delta / 27          # reéls
-
-        sqrt_term = sqrt(delta_sur_27)  # Use the sqrt function defined above
-        u_k = product_of_2_complex_numbers(complex_number_power_k(j_,k), sqrt_3(torch.tensor([0.5*(-q+sqrt_term[0]),sqrt_term[1]])) )# because q real 
-        v_k = product_of_2_complex_numbers(complex_number_power_k(j_,-k), sqrt_3(torch.tensor([0.5*(-q-sqrt_term[0]),-0.5*sqrt_term[1]])))
-
-        root = addition(addition(u_k, v_k), torch.tensor([-b/(3*a),0]) ) 
-        roots.append(root)
-
-    return torch.stack(roots)
