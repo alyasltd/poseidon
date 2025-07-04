@@ -20,7 +20,8 @@ def sqrt_batch(a):
     real_part = torch.where(a >=0, torch.sqrt(a), torch.tensor(0.0)*a)  #(batch_size,1)
     imag_part = torch.where(a <0 , torch.sqrt(-a), torch.tensor(0.0)*a) #(batch_size,1)
 
-    return torch.stack((real_part, imag_part), dim=-1)  #(batch_size, 2)
+    return torch.cat((real_part, imag_part),dim=1)  #(batch_size, 2)
+
 
 def product_complex_real_batch(a, b):
     print((a[:,0]))
@@ -138,5 +139,12 @@ print("Result of division:", division_2_complex_numbers(batch_a, batch_b))
 print("Result of addition with real number:", addition_complex_real(batch_a, batch_a_real))
 
 '''
+batch_size = 4  # Define the batch size
+batch_a_real = torch.randn(batch_size, 1)
 
+print("Batch a_real:", batch_a_real)
+print(batch_a_real.shape)
+result = sqrt_batch(batch_a_real)
+print("Result of sqrt:",result)
+print("Result of sqrt shape:", result.shape)  # Should be (batch_size, 2)
 
