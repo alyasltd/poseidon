@@ -24,9 +24,10 @@ def sqrt_batch(a):
 
 
 def product_complex_real_batch(a, b):
-    print((a[:,0]))
     # a = torch.tensor(batch_size*[,a_real, a_imag])
     # b is a real number (batch_size,1)
+    print("a.shape = ", a.shape)  # (batch_size, 2)
+    print("b.shape = ", b.shape)  # (batch_size, 1)
     return torch.stack([a[:,0] * b.squeeze(), a[:,1] * b.squeeze()],dim=-1) # (batch_size, 2)
 
 def inverse_complex_number(a):
@@ -97,9 +98,11 @@ def division_2_complex_numbers(a, b):
     inv_b = inverse_complex_number(b)  # (batch_size, 2)
     return product_of_2_complex_numbers_batch(a, inv_b)  # (batch_size, 2)
 
-def addition_complex_real(a, b):
+def addition_complex_real_batch(a, b):
     # a = torch.tensor(batch_size*[a_real, a_imag])
     #  b is a real number (batch_size,1)
+    print("a.shape = ", a.shape)  # (batch_size, 2)
+    print("b.shape = ", b.shape)  # (batch_size, 1)
     return torch.stack([a[:,0] + b[:,0], a[:,1]],dim=-1)  # (batch_size, 2)
 
     
@@ -110,7 +113,6 @@ Test the functions with a batch of complex numbers
 
 
 batch_size = 5
-batch_a = torch.randn(batch_size, 2)
 batch_b = torch.randn(batch_size, 2) 
 
 batch_a_real = torch.randn(batch_size, 1)
@@ -136,9 +138,6 @@ print("batch_a_real_complex_form:", batch_a_real_complex_form)
 print("Result of sqrt_3_batch:", sqrt_3_batch(batch_a_real_complex_form))
 print("Result of sqrt_complex_batch:", sqrt_complex_batch(batch_a))
 print("Result of division:", division_2_complex_numbers(batch_a, batch_b))
-print("Result of addition with real number:", addition_complex_real(batch_a, batch_a_real))
-
-'''
 batch_size = 4  # Define the batch size
 batch_a_real = torch.randn(batch_size, 1)
 
@@ -147,4 +146,12 @@ print(batch_a_real.shape)
 result = sqrt_batch(batch_a_real)
 print("Result of sqrt:",result)
 print("Result of sqrt shape:", result.shape)  # Should be (batch_size, 2)
+
+
+batch_a = torch.randn(batch_size, 2)
+
+print("Result of addition with real number:", addition_complex_real_batch(batch_a, batch_a_real))
+
+
+'''
 
