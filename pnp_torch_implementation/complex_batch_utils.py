@@ -101,8 +101,7 @@ def division_2_complex_numbers(a, b):
 def addition_complex_real_batch(a, b):
     # a = torch.tensor(batch_size*[a_real, a_imag])
     #  b is a real number (batch_size,1)
-    print("a.shape = ", a.shape)  # (batch_size, 2)
-    print("b.shape = ", b.shape)  # (batch_size, 1)
+    
     return torch.stack([a[:,0] + b[:,0], a[:,1]],dim=-1)  # (batch_size, 2)
 
     
