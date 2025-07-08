@@ -18,9 +18,9 @@ def sqrt(a):
     # a.shape =(0,)
     # a real 
     if a < 0:
-        return torch.tensor([0.0, torch.sqrt(torch.tensor(-a))]) 
+        return torch.stack([0.0, torch.sqrt(torch.tensor(-a))]) 
     else : 
-        return torch.tensor([torch.sqrt(torch.tensor(a)), 0.0])
+        return torch.stack([torch.sqrt(torch.tensor(a)), 0.0])
     
 def product_complex_real(a, b):
     # a = torch.tensor([a_real, a_imag])
