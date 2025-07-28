@@ -30,6 +30,8 @@ RunwayPoseEstimationDataset.split_runway_pose_dataset(
     annotation_file="/home/aws_install/data/yolonas_pose_base/annotations/yolonas_pose_annotations.json",
     train_annotation_file="/home/aws_install/data/yolonas_pose_base/annotations/yolonas_pose_train.json",
     val_annotation_file="/home/aws_install/data/yolonas_pose_base/annotations/yolonas_pose_val.json",
+    test_annotation_file="/home/aws_install/data/yolonas_pose_base/annotations/yolonas_pose_test.json",
+    test_fraction=0.2,  # 20% for test
     val_fraction=0.2
 )
 
@@ -128,6 +130,16 @@ val_dataset = RunwayPoseEstimationDataset(
     keypoint_colors=KEYPOINT_COLORS,
 )
 
+test_dataset = RunwayPoseEstimationDataset(
+    data_dir="/home/aws_install/data/yolonas_pose_base",     # Root directory of the dataset
+    images_dir="/home/aws_install/data/yolonas_pose_base/images",
+    json_file="/home/aws_install/data/yolonas_pose_base/annotations/yolonas_pose_test.json",
+    transforms=val_transforms,
+    edge_links=EDGE_LINKS,
+    edge_colors=EDGE_COLORS,
+    keypoint_colors=KEYPOINT_COLORS,
+)
+
 # Create dataloaders
 train_dataloader_params = {"shuffle": True, "batch_size": 24, "drop_last": True, "pin_memory": False, "collate_fn": YoloNASPoseCollateFN()}
 
@@ -137,14 +149,19 @@ train_dataloader = DataLoader(train_dataset, **train_dataloader_params)
 
 val_dataloader = DataLoader(val_dataset, **val_dataloader_params)
 
+test_dataloader = DataLoader(test_dataset, **val_dataloader_params)
+
 
 # Set the device, TRainer and model for training
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 CHECKPOINT_DIR = "checkpoints"
-trainer = Trainer(experiment_name="lard_ft_1", ckpt_root_dir=CHECKPOINT_DIR)
+trainer = Trainer(experiment_name="lard_ft_S_100_w_test", ckpt_root_dir=CHECKPOINT_DIR)
 
-yolo_nas_pose = models.get(Models.YOLO_NAS_POSE_S, num_classes=1,arch_params={"num_keypoints": NUM_JOINTS}, pretrained_weights="coco_pose").to(device)
+yolo_nas_pose = models.get(
+    Models.YOLO_NAS_POSE_S,
+    num_classes=NUM_JOINTS
+).to(device)
 
 
 # Define the post-prediction callback for pose estimation
@@ -192,7 +209,7 @@ train_params = {
     "initial_lr": 5e-4,
     "lr_mode": "cosine",
     "cosine_final_lr_ratio": 0.05,
-    "max_epochs": 100,
+    "max_epochs": 200,
     "zero_weight_decay_on_bias_and_bn": True,
     "batch_accumulate": 1,
     "average_best_models": True,
@@ -227,3 +244,24 @@ train_params = {
 
 # Note, this is training for 100 epochs 
 trainer.train(model=yolo_nas_pose, training_params=train_params, train_loader=train_dataloader, valid_loader=val_dataloader)
+
+
+post_prediction_callback = YoloNASPosePostPredictionCallback(
+    pose_confidence_threshold=0.01,
+    nms_iou_threshold=0.7,
+    pre_nms_max_predictions=300,
+    post_nms_max_predictions=30,
+)
+
+metrics = PoseEstimationMetrics(
+    num_joints=NUM_JOINTS,
+    oks_sigmas=OKS_SIGMAS,
+    max_objects_per_image=30,
+    post_prediction_callback=post_prediction_callback,
+)
+best_model = models.get("yolo_nas_pose_s", num_classes=NUM_JOINTS, checkpoint_path="/home/aws_install/poseidon/fine_tuning/checkpoints/lard_ft_S_100/RUN_20250709_140953_233014/ckpt_best.pth")
+     
+trainer.test(model=best_model, test_loader=test_dataloader, test_metrics_list=metrics)
+
+img_url = "/home/aws_install/data/yolonas_pose_base/images/test/ZBAA_36R_35_29.jpeg"
+best_model.predict(img_url, conf=0.20, fuse_model=False).show()

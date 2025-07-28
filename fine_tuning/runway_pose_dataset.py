@@ -20,7 +20,7 @@ from super_gradients.training.datasets.pose_estimation_datasets import YoloNASPo
 
 class RunwayPoseEstimationDataset(AbstractPoseEstimationDataset):
     @classmethod
-    def split_runway_pose_dataset(cls, annotation_file, train_annotation_file, val_annotation_file, val_fraction):
+    def split_runway_pose_dataset(cls, annotation_file, train_annotation_file, val_annotation_file, test_annotation_file, val_fraction,test_fraction):
         """
         Splits the runway pose dataset into training and validation sets.
         :param annotation_file: Path to the original annotation file.
@@ -30,12 +30,31 @@ class RunwayPoseEstimationDataset(AbstractPoseEstimationDataset):
         """
         with open(annotation_file, "r") as f:
             annotation = json.load(f)
+        
 
         image_ids = [img["id"] for img in annotation["images"]]
         labels = [[ann["category_id"] for ann in annotation["annotations"] if ann["image_id"] == img_id] for img_id in image_ids]
         labels = [label[0] if len(label) else -1 for label in labels]
 
-        train_ids, val_ids = train_test_split(image_ids, test_size=val_fraction, random_state=42, stratify=labels)
+        train_ids = []
+        val_ids = []
+        test_ids = []
+        
+        for img in annotation["images"]:
+            fname = img["file_name"].lower()
+            if "train" in fname:
+                train_ids.append(img["id"])
+            elif "val" in fname:
+                val_ids.append(img["id"])
+            elif "test" in fname:
+                test_ids.append(img["id"])
+            else:
+                # Optional: handle images without split keyword, e.g., assign to train or ignore
+                pass
+
+
+        #train_ids, temp_val_ids = train_test_split(image_ids, test_size=val_fraction, random_state=42, stratify=labels)
+        #val_ids, test_ids = train_test_split(temp_val_ids, test_size=test_fraction, random_state=42, stratify=[labels[image_ids.index(id)] for id in temp_val_ids])
 
         train_annotations = {
             "info": annotation.get("info", {}),
@@ -51,10 +70,19 @@ class RunwayPoseEstimationDataset(AbstractPoseEstimationDataset):
             "annotations": [ann for ann in annotation["annotations"] if ann["image_id"] in val_ids],
         }
 
+        test_annotations = {
+            "info": annotation.get("info", {}),
+            "categories": annotation["categories"],
+            "images": [img for img in annotation["images"] if img["id"] in test_ids],
+            "annotations": [ann for ann in annotation["annotations"] if ann["image_id"] in test_ids],
+        }
+
         with open(train_annotation_file, "w") as f:
             json.dump(train_annotations, f, indent=2)
         with open(val_annotation_file, "w") as f:
             json.dump(val_annotations, f, indent=2)
+        with open(test_annotation_file, "w") as f:
+            json.dump(test_annotations, f, indent=2)
 
     @resolve_param("transforms", TransformsFactory())
     def __init__(
