@@ -3,7 +3,7 @@ import torch.nn.functional as F
 
 torch.set_printoptions(precision=4, sci_mode=False)
 
-def generate_synthetic_2D3Dpoints(R, C, A, P1, P2, P3, batch_size=16):
+def generate_synthetic_2D3Dpoints(R, C, A, P1, P2, P3, batch_size=16, device=None):
     """
     Generate synthetic corresponding 2D and 3D points for P3P problem.
     Args:
@@ -34,6 +34,7 @@ def generate_synthetic_2D3Dpoints(R, C, A, P1, P2, P3, batch_size=16):
 
     # Transpose to shape (B, 3, 2)
     points2D = points2D.permute(0, 2, 1)  # (B, 3, 2)
+    print("Projected 2D points :", points2D[0])
 
     return points2D
 
@@ -43,9 +44,9 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     batch_size = 16
 
-    P1 = torch.tensor([0.7161, 0.5431, 1.7807], dtype=torch.float64, device=device)
-    P2 = torch.tensor([-1.1643, 0.8371, -1.0551], dtype=torch.float64, device=device)
-    P3 = torch.tensor([-1.5224, 0.4292, -0.1994], dtype=torch.float64, device=device)
+    P1 = torch.tensor([0.7161, 0.5431, 1.7807], dtype=torch.float32, device=device)
+    P2 = torch.tensor([-1.1643, 0.8371, -1.0551], dtype=torch.float32, device=device)
+    P3 = torch.tensor([-1.5224, 0.4292, -0.1994], dtype=torch.float32, device=device)
 
     def camera(batch_size, device):
         fx = 800.0
@@ -82,4 +83,4 @@ if __name__ == "__main__":
     R = rotation_matrix(batch_size, device)
     C = camera_position(batch_size, device)
 
-    points2D = generate_synthetic_2D3Dpoints(R, C, A, P1, P2, P3, batch_size)
+    points2D = generate_synthetic_2D3Dpoints(R, C, A, P1, P2, P3, batch_size, device)
