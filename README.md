@@ -26,6 +26,7 @@ Traditional object detection models are not designed to meet **aerospace-grade a
 - ✅ YOLO-NAS based backbone for real-time inference  
 - ✅ Predict 2D keypoints of known 3D landmarks (e.g., runway corners)  
 - ✅ Differentiable P3P (Perspective-Three-Point) solver using:  
-  - 🌀 **Implicit differentiation** (Bo Chen et al. [2])  
+  - 🌀 A Novel Parametrization of the Perspective-Three-Point Problem for a Direct Computation of Absolute Camera Position and Orientation (Kneip and al. CVPR 2011)
+  
 - ✅ Pose-aware loss combining PnP and OKS  
 - ✅ Configurable ILS-based error tolerances in the training objective 
