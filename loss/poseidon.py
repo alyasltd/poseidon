@@ -1,5 +1,6 @@
 import torch 
 from simulate_data import batched_simulation 
+
 from PNP.poseidon.pnp_torch_implementation.get_feature_vectors import get_feature_vectors
 from PNP.poseidon.pnp_torch_implementation.check_collinearity import check_non_collinearity
 from PNP.poseidon.pnp_torch_implementation.get_eta_basis import get_eta_basis_and_p3_proj
@@ -74,15 +75,36 @@ def loss_poseidon(A, worldpoints, GT_imagepoints, predicted_imagepoints):
     best_proj_points, best_solutions = select_best_p3p_solution_batched(solutions, worldpoints, GT_imagepoints, A) # [B, 3, 4] - the best pose per sample
 
     #Step 3 BIS : Compute the 2D reprojection- 2D predicted image points accuracy
-    reprojection_error = torch.sum((predicted_imagepoints - best_proj_points) ** 2, dim=-1)
-    
+    #reprojection_error = torch.sum((predicted_imagepoints - best_proj_points) ** 2, dim=-1)
+    reprojection_error = torch.norm(predicted_imagepoints - best_proj_points, dim=-1)  # [B, N]
+    reprojection_loss = reprojection_error.mean(dim=1)  # [B]
+
     #Step 4 : Compute the distances from the camera to the 3D points and compute ILS level of penalisation 
-    # Note: The distance computation is not implemented here, but you would typically compute the distance from the camera center to the 3D points.
-    # it's depth estimation
+    
+    t = best_solutions[:, :, 0:1]  # [B, 3, 1]
+    R = best_solutions[:, :, 1:4]  # [B, 3, 3]
 
+    # Compute camera center in world coordinates: C = -R^T * t
+    RT = R.transpose(1, 2)  # [B, 3, 3]
+    C = -torch.bmm(RT, t).squeeze(-1)  # [B, 3]
 
+    # Expand camera center for broadcasting
+    C_expanded = C[:, None, :]  # [B, 1, 3]
 
-    pass
+    # Compute distances to each 3D world point
+    dist_vectors = worldpoints - C_expanded  # [B, N, 3]
+    distances = torch.norm(dist_vectors, dim=-1)  # [B, N]
+
+    # ILS-style penalization
+    epsilon = 1e-6
+    ils_penalty = torch.log(1 + 1 / (distances + epsilon))  # [B, N]
+    ils_loss = ils_penalty.mean(dim=1)  # [B]
+
+    # Combine with reprojection loss
+    lambda_ils = 0.1
+    total_loss = reprojection_loss + lambda_ils * ils_loss  # [B]
+
+    return total_loss.mean(), best_solutions, distances  # scalar loss, pose, distances
 
 
 
@@ -128,3 +150,9 @@ if __name__ == "__main__":
 
     # Simulate the projection of the 3D points to 2D
     GT_3Dpoints, GT_2Dpoints, simulated_2Dpredicted_points = batched_simulation( R, C, A, device=device, batch_size=batch_size)
+
+    # Compute the loss
+    loss, estimated_pose, distances = loss_poseidon(A, GT_3Dpoints, GT_2Dpoints, simulated_2Dpredicted_points)
+    print("Loss:", loss.item())
+    print("Estimated Pose (R, t):", estimated_pose[0])
+    print("Distances from camera to 3D points:", distances[0])
