@@ -23,11 +23,11 @@ def check_non_collinearity(batched_points):
     print("Cross product norms:", norms)
 
     # Non-zero area ⇒ not collinear
-    all_non_collinear = torch.all(norms > 1e-8)
+    all_non_collinear = torch.all(norms > 1e-8) #retrurns True if all norms are greater than a small threshold
 
-    if not all_non_collinear:
-        print("\n❌ Problem: the points must not be collinear")
-    else:
-        print("\n✅ The points are not collinear, we can continue")
+    #if not all_non_collinear:
+    #    print("\n❌ Problem: the points must not be collinear")
+    #else:
+    #    print("\n✅ The points are not collinear, we can continue")
 
     return all_non_collinear
