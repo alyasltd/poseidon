@@ -25,11 +25,11 @@ def generate_batched_3Dpoints(batch_size, device):
     points3D = base_points.unsqueeze(0).repeat(batch_size, 1, 1)
 
     # Print the first 3 batches of 3D points
-    print("Generated 3D points (first 3 batches):", points3D[:3])
+    #print("Generated 3D points (first 3 batches):", points3D[:3])
     
     return points3D
 
-def batched_simulation(points, R, C, A):
+def batched_simulation(R, C, A, batch_size, device):
     """
     Simulate 2D points from 3D points, rotation matrix, and camera translation.
     Args:
@@ -38,6 +38,7 @@ def batched_simulation(points, R, C, A):
         C (torch.Tensor): Camera translation vector of shape (B, 3).
         A (torch.Tensor): Camera intrinsic matrix of shape (B, 3, 3).
     """
+    points = generate_batched_3Dpoints(batch_size, device)  # Generate random 3D points
     batch_size = points.shape[0]
     device = points.device
 
@@ -59,18 +60,22 @@ def batched_simulation(points, R, C, A):
 
     # Transpose to shape (B, 3, 2)
     points2D = points2D.permute(0, 2, 1)  # (B, 3, 2)
-    print("Projected 2D points :", points2D[:3])
 
-    return points2D
+
+
+    GT_points = points2D.clone()  # Ground truth points are the same as projected points
+    noise = torch.randn_like(GT_points) * 0.1  # Add small noise
+    simulated_2Dpredicted_points = GT_points + noise  # Simulated predicted points with noise
+    #print("Projected noisy predicted 2D points :", simulated_2Dpredicted_points[:3])
+    #print("Ground truth 2D points :", GT_points[:3])
+
+    return points, GT_points, simulated_2Dpredicted_points
 
 
 # Example usage:
 if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     batch_size = 16
-
-    # Generate random 3D points
-    points3D = generate_batched_3Dpoints(batch_size, device)
 
     def camera(batch_size, device):
         fx = 800.0
@@ -108,4 +113,4 @@ if __name__ == "__main__":
     C = camera_position(batch_size, device)
 
     # Simulate the projection of the 3D points to 2D
-    points2D = batched_simulation(points3D, R, C, A)
+    GT_3Dpoints, GT_2Dpoints, simulated_2Dpredicted_points = batched_simulation( R, C, A, device=device, batch_size=batch_size)
