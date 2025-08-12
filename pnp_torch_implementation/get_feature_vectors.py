@@ -1,5 +1,5 @@
 import torch
-from PNP.poseidon.pnp_torch_implementation.generate_synthetic_2D3Dpoints import generate_synthetic_2D3Dpoints
+#from poseidon.pnp_torch_implementation.generate_synthetic_2D3Dpoints import generate_synthetic_2D3Dpoints
 
 #after generating 2D and 3D points using generate_synthetic_2D3Dpoints, we can compute the feature vectors
 
@@ -78,6 +78,6 @@ if __name__ == "__main__":
     R = rotation_matrix(batch_size, device)
     C = camera_position(batch_size, device)
 
-    points2D = generate_synthetic_2D3Dpoints(R, C, A, P1, P2, P3, batch_size, device) #output shape (B, 3, 2)
-    featuresVect = get_feature_vectors(points2D, A, batch_size, device)
+    #points2D = generate_synthetic_2D3Dpoints(R, C, A, P1, P2, P3, batch_size, device) #output shape (B, 3, 2)
+    #featuresVect = get_feature_vectors(points2D, A, batch_size, device)
 
