@@ -1,13 +1,13 @@
 import torch 
 from simulate_data import batched_simulation 
 
-from PNP.poseidon.pnp_torch_implementation.get_feature_vectors import get_feature_vectors
-from PNP.poseidon.pnp_torch_implementation.check_collinearity import check_non_collinearity
-from PNP.poseidon.pnp_torch_implementation.get_eta_basis import get_eta_basis_and_p3_proj
-from PNP.poseidon.pnp_torch_implementation.get_tau_basis import get_tau_basis_and_f3_proj
-from PNP.poseidon.pnp_torch_implementation.get_solutions import compute_solutions_batched
-from PNP.poseidon.pnp_torch_implementation.best_solutions import select_best_p3p_solution_batched
-from PNP.poseidon.pnp_torch_implementation.intermediate_variable import get_intermediate_variable, compute_polynomial_coefficients
+from poseidon.pnp_torch_implementation.get_feature_vectors import get_feature_vectors
+from poseidon.pnp_torch_implementation.check_collinearity import check_non_collinearity
+from poseidon.pnp_torch_implementation.get_eta_basis import get_eta_basis_and_p3_proj
+from poseidon.pnp_torch_implementation.get_tau_basis import get_tau_basis_and_f3_proj
+from poseidon.pnp_torch_implementation.get_solutions import compute_solutions_batched
+from poseidon.pnp_torch_implementation.best_solutions import select_best_p3p_solution_batched
+from poseidon.pnp_torch_implementation.intermediate_variable import get_intermediate_variable, compute_polynomial_coefficients
 from autoroot.torch.quartic.quartic import (  # type: ignore
     polynomial_root_calculation_4th_degree_ferrari,
 )
