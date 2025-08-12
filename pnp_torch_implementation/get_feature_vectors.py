@@ -1,5 +1,5 @@
 import torch
-from generate_synthetic_2D3Dpoints import generate_synthetic_2D3Dpoints
+from PNP.poseidon.pnp_torch_implementation.generate_synthetic_2D3Dpoints import generate_synthetic_2D3Dpoints
 
 #after generating 2D and 3D points using generate_synthetic_2D3Dpoints, we can compute the feature vectors
 
