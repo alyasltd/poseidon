@@ -9,67 +9,54 @@ The output will be 2D points projected from the 3D points using the provided rot
 2D points computed only with R and C are perfectly aligned with the camera frame, but we will add noise to simulate real-world conditions.
 """
 
-def generate_batched_3Dpoints(batch_size, device):
+def generate_batched_3Dpoints(batch_size, device, fixed=False, dtype=torch.float32):
     """
-    Generate a random batch of 3D points in world coordinates.
+    Generate a batch of 3D points in world coordinates.
+
     Args:
         batch_size (int): Number of batches to generate.
-        device (torch.device): Device to create tensors on (CPU or GPU).
+        device (torch.device): Device to create tensors on.
+        fixed (bool): If True, use fixed debug points; else random in [-2, 2].
+        dtype (torch.dtype): Tensor dtype (default: float32).
+
     Returns:
-        torch.Tensor: A tensor of shape (B, 3, 3) representing 3D points.
+        torch.Tensor: (B, 3, 3)  -> for each batch, three 3D points.
     """
-    # Generate 3 random 3D points (shape: 3 x 3)
-    base_points = torch.empty((3, 3), device=device).uniform_(-2, 2)
+    if fixed:
+        # Your fixed debug points
+        P1 = torch.tensor([ 0.7161,  0.5431,  1.7807], dtype=dtype, device=device)
+        P2 = torch.tensor([-1.1643,  0.8371, -1.0551], dtype=dtype, device=device)
+        P3 = torch.tensor([-1.5224,  0.4292, -0.1994], dtype=dtype, device=device)
+        base_points = torch.stack([P1, P2, P3], dim=0)  # (3, 3)
+    else:
+        base_points = torch.empty((3, 3), dtype=dtype, device=device).uniform_(-2, 2)
 
-    # Repeat the same 3 points for each batch
-    points3D = base_points.unsqueeze(0).repeat(batch_size, 1, 1)
-
-    # Print the first 3 batches of 3D points
-    #print("Generated 3D points (first 3 batches):", points3D[:3])
-    
+    # Repeat the same 3 points for each item in the batch
+    points3D = base_points.unsqueeze(0).repeat(batch_size, 1, 1)  # (B, 3, 3)
     return points3D
 
+
 def batched_simulation(R, C, A, batch_size, device):
-    """
-    Simulate 2D points from 3D points, rotation matrix, and camera translation.
-    Args:
-        3Dpoints (torch.Tensor): Tensor of shape (B, N, 3) representing 3D points where N=3 for P3P.
-        R (torch.Tensor): Rotation matrix of shape (B, 3, 3).
-        C (torch.Tensor): Camera translation vector of shape (B, 3).
-        A (torch.Tensor): Camera intrinsic matrix of shape (B, 3, 3).
-    """
-    points = generate_batched_3Dpoints(batch_size, device)  # Generate random 3D points
-    batch_size = points.shape[0]
-    device = points.device
+    points = generate_batched_3Dpoints(batch_size, device, fixed=True, dtype=torch.float32)  # (B, 3, 3)
+    t = -R @ C.view(batch_size, 3, 1)  # (B, 3, 1)
+    Rt = torch.cat([R, t], dim=2)      # (B, 3, 4)
+    P = torch.bmm(A, Rt)               # (B, 3, 4)
 
-    # Compute camera translation vector from rotation R and position C
-    t = -R @ torch.reshape(C, (batch_size, 3, 1))
-    
-    # Build projection matrix: P = K [R|t]
-    Rt = torch.cat([R, t], dim=2)
-    Rt = Rt.reshape(batch_size, 3, 4)  # Reshape to (B, 3, 4)
-    P = A @ Rt
+    ones = torch.ones((batch_size, points.shape[1], 1), dtype=points.dtype, device=device)  # (B, N, 1)
+    points3D_h = torch.cat([points, ones], dim=2)  # (B, N, 4)
 
-    # Add homogeneous coordinate (append 1 to each 3D point)
-    ones = torch.ones((batch_size, 1, 3), dtype=points.dtype,device=device)  # (B, 3, 1)
-    points3D_h = torch.cat([points, ones], dim=1)  # (B, 3, 4)
-    P = P.to(points.dtype)
+    proj = torch.bmm(points3D_h, P.transpose(1, 2))  # (B, N, 3)
+    points2D = proj[:, :, :2] / proj[:, :, 2:].clamp_min(1e-6)  # (B, N, 2)
 
-    proj = P @ points3D_h
-    points2D = proj[:, :2, :] / proj[:, 2:, :] 
+    GT_points = points2D.clone()
+    noise = torch.randn_like(GT_points) * 0.1
+    simulated_2Dpredicted_points = GT_points + noise
 
-    # Transpose to shape (B, 3, 2)
-    points2D = points2D.permute(0, 2, 1)  # (B, 3, 2)
-
-
-
-    GT_points = points2D.clone()  # Ground truth points are the same as projected points
-    noise = torch.randn_like(GT_points) * 0.1  # Add small noise
-    simulated_2Dpredicted_points = GT_points + noise  # Simulated predicted points with noise
-    #print("Projected noisy predicted 2D points :", simulated_2Dpredicted_points[:3])
-    #print("Ground truth 2D points :", GT_points[:3])
+    print("Projected noisy predicted 2D points :", simulated_2Dpredicted_points[:3])
+    print("Ground truth 2D points :", GT_points[:3])
 
     return points, GT_points, simulated_2Dpredicted_points
+
 
 
 # Example usage:

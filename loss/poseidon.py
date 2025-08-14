@@ -1,5 +1,5 @@
 import torch 
-from simulate_data import batched_simulation 
+from poseidon.loss.simulate_data import batched_simulation 
 
 from poseidon.pnp_torch_implementation.get_feature_vectors import get_feature_vectors
 from poseidon.pnp_torch_implementation.check_collinearity import check_non_collinearity
