@@ -6,7 +6,7 @@ from poseidon.pnp_torch_implementation.check_collinearity import check_non_colli
 from poseidon.pnp_torch_implementation.get_eta_basis import get_eta_basis_and_p3_proj
 from poseidon.pnp_torch_implementation.get_tau_basis import get_tau_basis_and_f3_proj
 from poseidon.pnp_torch_implementation.get_solutions import compute_solutions_batched
-from poseidon.pnp_torch_implementation.best_solutions import select_best_p3p_solution_batched
+from poseidon.pnp_torch_implementation.best_solutions import select_best_p3p_solution_batched, select_best_p3p_solution_batched_soft
 from poseidon.pnp_torch_implementation.intermediate_variable import get_intermediate_variable, compute_polynomial_coefficients
 from autoroot.torch.quartic.quartic import (  # type: ignore
     polynomial_root_calculation_4th_degree_ferrari,
@@ -24,7 +24,6 @@ The loss tends to be zero when the camera pose is estimated correctly and the 2D
 And the loss tends to be large when the camera pose is estimated incorrectly.
 """
 
-@torch.autograd.Function
 def loss_poseidon(A, worldpoints, GT_imagepoints, predicted_imagepoints): 
     """
     Compute the loss poseidon that take as input the camera intrinsic matrix A, the 3D world points, and the 2D image points and compute
@@ -61,7 +60,7 @@ def loss_poseidon(A, worldpoints, GT_imagepoints, predicted_imagepoints):
     phi1, phi2, p1, p2, d12, b = get_intermediate_variable(featuresVect,worldpoints, f3_T, P3_n)
 
     a4, a3, a2, a1, a0 = compute_polynomial_coefficients(phi1, phi2, p1, p2, d12, b)
-    a0_cpu = a0.cpu()
+    a0_cpu = a0.cpu() # just a current problem with autoroot library
     a1_cpu = a1.cpu()
     a2_cpu = a2.cpu()
     a3_cpu = a3.cpu()
@@ -74,41 +73,34 @@ def loss_poseidon(A, worldpoints, GT_imagepoints, predicted_imagepoints):
     # here need a function that returns the best solution based on the reprojection error DONE 
     #Step 3 : REPROJECTION We use A R and t to project 3D into 2D 
     # but this is not gradient friendly
-    best_proj_points, best_solutions = select_best_p3p_solution_batched(solutions, worldpoints, GT_imagepoints, A) # [B, 3, 4] - the best pose per sample
+    #best_proj_points, best_solutions = select_best_p3p_solution_batched(solutions, worldpoints, GT_imagepoints, A) # [B, 3, 4] - the best pose per sample
 
-    #Step 3 BIS : Compute the 2D reprojection- 2D predicted image points accuracy
-    #reprojection_error = torch.sum((predicted_imagepoints - best_proj_points) ** 2, dim=-1)
-    reprojection_error = torch.norm(predicted_imagepoints - best_proj_points, dim=-1)  # [B, N]
+    proj_soft, C_soft, R_soft, w = select_best_p3p_solution_batched_soft(
+    solutions, worldpoints, GT_imagepoints, A, tau=5.0
+    )
+    #print("CC:", C_soft[0], "R:", R_soft[0])  # Print the first camera center and rotation for debugging
+
+    # Step 3 BIS: reprojection loss
+    reprojection_error = torch.norm(predicted_imagepoints - proj_soft, dim=-1)  # [B, N]
     reprojection_loss = reprojection_error.mean(dim=1)  # [B]
 
-    #Step 4 : Compute the distances from the camera to the 3D points and compute ILS level of penalisation 
-    
-    t = best_solutions[:, :, 0:1]  # [B, 3, 1]
-    R = best_solutions[:, :, 1:4]  # [B, 3, 3]
-
-    # Compute camera center in world coordinates: C = -R^T * t
-    RT = R.transpose(1, 2)  # [B, 3, 3]
-    C = -torch.bmm(RT, t).squeeze(-1)  # [B, 3]
-
-    # Expand camera center for broadcasting
-    C_expanded = C[:, None, :]  # [B, 1, 3]
-
-    # Compute distances to each 3D world point
-    dist_vectors = worldpoints - C_expanded  # [B, N, 3]
-    distances = torch.norm(dist_vectors, dim=-1)  # [B, N]
-
-    # ILS-style penalization
+    # Step 4: ILS penalty
     epsilon = 1e-6
+    distances = torch.norm(worldpoints - C_soft[:, None, :], dim=-1)  # [B, N]
     ils_penalty = torch.log(1 + 1 / (distances + epsilon))  # [B, N]
     ils_loss = ils_penalty.mean(dim=1)  # [B]
 
-    # Combine with reprojection loss
     lambda_ils = 0.1
-    total_loss = reprojection_loss + lambda_ils * ils_loss  # [B]
+    total_loss_per_sample = reprojection_loss + lambda_ils * ils_loss  # [B]
 
-    return total_loss.mean(), best_solutions, distances  # scalar loss, pose, distances
-
-
+    # Return everything you need for logging
+    return (
+        total_loss_per_sample.mean(),
+        (R_soft, C_soft),         # pose
+        distances,                # distances per point
+        reprojection_loss.mean().item(),
+        ils_loss.mean().item()
+    )
 
 if __name__ == "__main__":
 
@@ -153,8 +145,13 @@ if __name__ == "__main__":
     # Simulate the projection of the 3D points to 2D
     GT_3Dpoints, GT_2Dpoints, simulated_2Dpredicted_points = batched_simulation( R, C, A, device=device, batch_size=batch_size)
 
-    # Compute the loss
-    loss, estimated_pose, distances = loss_poseidon(A, GT_3Dpoints, GT_2Dpoints, simulated_2Dpredicted_points)
-    print("Loss:", loss.item())
-    print("Estimated Pose (R, t):", estimated_pose[0])
+    loss, (R_est, C_est), distances, reproj_val, ils_val = loss_poseidon(
+    A, GT_3Dpoints, GT_2Dpoints, simulated_2Dpredicted_points
+    )
+
+    print(f"Loss: {loss.item():.4f}")
+    print(f"Reprojection Loss (avg over batch): {reproj_val:.4f}")
+    print(f"ILS Loss (avg over batch): {ils_val:.4f}")
+    print("Estimated Rotation R:", R_est[0])
+    print("Estimated Camera Center C:", C_est[0])
     print("Distances from camera to 3D points:", distances[0])

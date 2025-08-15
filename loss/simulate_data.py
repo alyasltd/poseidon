@@ -49,7 +49,7 @@ def batched_simulation(R, C, A, batch_size, device):
     points2D = proj[:, :, :2] / proj[:, :, 2:].clamp_min(1e-6)  # (B, N, 2)
 
     GT_points = points2D.clone()
-    noise = torch.randn_like(GT_points) * 0.1
+    noise = torch.randn_like(GT_points) * 5
     simulated_2Dpredicted_points = GT_points + noise
 
     print("Projected noisy predicted 2D points :", simulated_2Dpredicted_points[:3])
