@@ -133,7 +133,7 @@ if __name__ == "__main__":
         return R
 
     def camera_position(batch_size, device):
-        C_single = torch.tensor([[0, 0, 6]], dtype=torch.float32, device=device) # (1, 3)
+        C_single = torch.tensor([[0, 0, 3]], dtype=torch.float32, device=device) # (1, 3)
         C = C_single.repeat(batch_size, 1, 1)  # (B, 1, 3) 
         return C
 

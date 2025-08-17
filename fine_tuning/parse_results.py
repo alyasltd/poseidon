@@ -1,59 +1,97 @@
+import re
 import csv
-from pathlib import Path
 
-def parse_log_file(log_path, csv_path):
-    rows = []
-    all_metrics = set()
+log_file = "/Users/alyazouzou/Desktop/pnp_yolo_nas/output_naspt_w_200 epoch.log"
+csv_file = "metrics_without_coco.csv"
 
-    with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
-        lines = f.readlines()
+epoch_re = re.compile(r"SUMMARY OF EPOCH (\d+)")
+metric_re = re.compile(r"([A-Za-z0-9_/\.]+)\s*=\s*([0-9\.eE+-]+)")
 
-    current_epoch = None
-    current_data = {}
-    section = None  # 'train' or 'val'
+results = []
+current_epoch = None
+current_metrics = {}
+section = None  # "train" ou "val"
 
-    for line in lines:
-        line = line.strip()
-
-        # Detect new epoch
-        if line.startswith("SUMMARY OF EPOCH"):
+with open(log_file, "r", encoding="utf-8") as f:
+    for line in f:
+        # Nouveau bloc d’epoch
+        m = epoch_re.search(line)
+        if m:
             if current_epoch is not None:
-                rows.append(current_data)
-            current_epoch = int(line.split()[-1])
-            current_data = {"epoch": current_epoch}
+                current_metrics["epoch"] = current_epoch
+                results.append(current_metrics)
+            current_epoch = int(m.group(1))
+            current_metrics = {}
             section = None
+            continue
 
-        elif line.startswith("Train"):
+        # Détection de section
+        if "Train" in line:
             section = "train"
-        elif line.startswith("Validation"):
+            continue
+        if "Validation" in line:
             section = "val"
+            continue
 
-        # Match metrics lines like: Yolonasposeloss/loss_cls = 0.1761
-        elif "=" in line and section:
+        # Extraction des métriques
+        m = metric_re.search(line)
+        if m:
+            name, value = m.groups()
+            val = value.strip().rstrip(".")
             try:
-                key, value = line.split("=")
-                key = section + "_" + key.strip("├└│ ").strip()
-                value = float(value.strip("├└│ ").strip())
-                current_data[key] = value
-                all_metrics.add(key)
-            except ValueError:
-                pass
+                val = float(val)
+            except:
+                continue
 
-    # Add last epoch
-    if current_epoch is not None:
-        rows.append(current_data)
+            name = name.lower()
 
-    # Write CSV
-    headers = ["epoch"] + sorted(all_metrics)
-    with open(csv_path, "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=headers)
-        writer.writeheader()
-        writer.writerows(rows)
+            # mapping pour les losses détaillées
+            if "loss_cls" in name:
+                key = f"{section}_loss_cls"
+            elif "loss_iou" in name:
+                key = f"{section}_loss_iou"
+            elif "loss_dfl" in name:
+                key = f"{section}_loss_dfl"
+            elif "loss_pose_cls" in name:
+                key = f"{section}_loss_pose_cls"
+            elif "loss_pose_reg" in name:
+                key = f"{section}_loss_pose_reg"
+            elif name.endswith("yolonasposeloss/loss"):
+                key = f"{section}_loss"
+            elif "ap_0.50" in name:
+                key = "ap_0.50"
+            elif "ap_0.75" in name:
+                key = "ap_0.75"
+            elif "ar_0.50" in name:
+                key = "ar_0.50"
+            elif "ar_0.75" in name:
+                key = "ar_0.75"
+            elif name.endswith("ap"):
+                key = "ap"
+            elif name.endswith("ar"):
+                key = "ar"
+            else:
+                continue
 
-    print(f"✅ Parsed {len(rows)} epochs into {csv_path}")
+            current_metrics[key] = val
 
-if __name__ == "__main__":
-    parse_log_file(
-        "/home/aws_install/poseidon_prog/fine_tuning/output_naspt_w_200 epoch.log",
-        "metrics_from_scratch.csv"
-    )
+# Sauvegarde du dernier epoch
+if current_epoch is not None:
+    current_metrics["epoch"] = current_epoch
+    results.append(current_metrics)
+
+# Colonnes fixes (train + val détaillé + metrics)
+columns = [
+    "epoch",
+    "train_loss", "train_loss_cls", "train_loss_iou", "train_loss_dfl", "train_loss_pose_cls", "train_loss_pose_reg",
+    "val_loss", "val_loss_cls", "val_loss_iou", "val_loss_dfl", "val_loss_pose_cls", "val_loss_pose_reg",
+    "ap", "ar", "ap_0.50", "ap_0.75", "ar_0.50", "ar_0.75"
+]
+
+with open(csv_file, "w", newline="") as f:
+    writer = csv.DictWriter(f, fieldnames=columns)
+    writer.writeheader()
+    for row in results:
+        writer.writerow({col: row.get(col, "") for col in columns})
+
+print(f"✅ CSV détaillé enregistré dans {csv_file}")

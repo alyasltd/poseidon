@@ -36,7 +36,7 @@ def select_best_p3p_solution_batched(solutions, worldpoints, GT_imagepoints, A):
 
     return best_proj_points, best_solutions
 
-def select_best_p3p_solution_batched_soft(solutions, worldpoints, GT_imagepoints, A, tau=5.0):
+def select_best_p3p_solution_batched_soft(solutions, worldpoints, GT_imagepoints, A, tau=0.1):
     """
     Differentiable alternative to hard argmin selection.
     
@@ -74,6 +74,7 @@ def select_best_p3p_solution_batched_soft(solutions, worldpoints, GT_imagepoints
 
     # Softmin over errors to get weights
     w = torch.softmax(-reproj_errors / tau, dim=1)  # (B, S)
+    print("Soft weights:", w[:3])  # Debugging output
 
     # Soft projection (weighted sum over candidates)
     proj_soft = (w[..., None, None] * proj_stack).sum(dim=1)  # (B, N, 2)
