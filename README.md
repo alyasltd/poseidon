@@ -3,9 +3,9 @@
 
 > **POSEIDON** brings differentiable pose estimation to deep keypoint models by integrating Perspective-n-Point (PnP) solving with implicit gradients — diving deep into spatial reasoning for robust 3D localization.
 
-| ![Day runway](inference_images/results/output_nas_lard_low_conf.png) | ![Night runway](inference_images/results/output_nas_lard_low_conf.png) |
+| ![Day runway](inference_images/results/highterconf_output_80 epoch.png) | ![Night runway](inference_images/results/output_nas_lard_low_conf.png) |
 |:--------------------------------------:|:------------------------------------------:|
-| Day runway view                        | Night runway view                          |
+| YOLO-NAS-POSE S with COCO-POSE weights                      |  YOLO-NAS-POSE S with Random weights                  |
 
 ---
 
