@@ -5,7 +5,7 @@
 
 | ![Day runway](inference_images/results/highterconf_output_80 epoch.png) | ![Night runway](inference_images/results/output_nas_lard_low_conf.png) |
 |:--------------------------------------:|:------------------------------------------:|
-| YOLO-NAS-POSE S with COCO-POSE weights                      |  YOLO-NAS-POSE S with Random weights                  |
+| YOLO-NAS-POSE S with COCO-POSE weights  |  YOLO-NAS-POSE S with Random weights    |
 
 ---
 
