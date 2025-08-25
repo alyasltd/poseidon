@@ -3,6 +3,10 @@
 
 > **POSEIDON** brings differentiable pose estimation to deep keypoint models by integrating Perspective-n-Point (PnP) solving with implicit gradients — diving deep into spatial reasoning for robust 3D localization.
 
+| ![Day runway](https://github.com/alyasltd/poseidon/blob/08a263a326b20648d9110b4c9fad612bb45e97c4/inference_images/results/highterconf_output_80%20epoch.png) | ![Night runway](inference_images/results/output_nas_lard_low_conf.png) |
+|:--------------------------------------:|:------------------------------------------:|
+| Day runway view                        | Night runway view                          |
+
 ---
 
 ## Industrial Project Overview
@@ -13,7 +17,7 @@ This project enhances the [YOLO-NAS](https://github.com/Deci-AI/super-gradients)
 
 ## Motivation
 
-Traditional object detection models are not designed to meet **aerospace-grade accuracy tolerances** like those defined by the **Instrument Landing System (ILS)**. This project aims to bridge that gap by:
+Traditional object detection models are not designed to meet **aerospace-grade accuracy tolerances**. This project aims to bridge that gap by:
 
 - Embedding **camera pose estimation** directly into the learning objective  
 - Enabling models to learn **keypoint configurations** that are optimal for 6-DoF localization  
@@ -28,5 +32,4 @@ Traditional object detection models are not designed to meet **aerospace-grade a
 - ✅ Differentiable P3P (Perspective-Three-Point) solver using:  
   - 🌀 A Novel Parametrization of the Perspective-Three-Point Problem for a Direct Computation of Absolute Camera Position and Orientation (Kneip and al. CVPR 2011)
   
-- ✅ Pose-aware loss combining PnP and OKS  
-- ✅ Configurable ILS-based error tolerances in the training objective 
+- ✅ Pose-aware loss combining PnP and OKS 
