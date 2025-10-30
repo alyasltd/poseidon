@@ -32,4 +32,4 @@ Traditional object detection models are not designed to meet **aerospace-grade a
 - ✅ Differentiable P3P (Perspective-Three-Point) solver using:  
   - 🌀 A Novel Parametrization of the Perspective-Three-Point Problem for a Direct Computation of Absolute Camera Position and Orientation (Kneip and al. CVPR 2011)
   
-- ✅ Pose-aware loss combining PnP and OKS 
+- ✅ Pose-aware loss combining PnP and OKS (but not tested yet)
